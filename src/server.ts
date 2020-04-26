@@ -4,6 +4,7 @@ import routes from './routes';
 
 const app = express();
 
+app.use(express.json()); // configurando o express para entender o formato JSON enviado pelas requisições
 app.use(routes);
 
 app.listen(3333, () => {
