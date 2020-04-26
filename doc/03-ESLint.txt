@@ -1,0 +1,41 @@
+01) Instalar o plugin do "ESLint" no VS Code.
+
+
+02) Instalar o "ESLint" como dependencia de desenvolvimento:
+
+    yarn add eslint -D
+
+
+03) Inicializar o "ESLint":
+
+    yarn eslint --init
+
+
+04) Instalar as dependencias do "ESLint" com o Yarn:
+
+    yarn add -D @typescript-eslint/eslint-plugin@latest eslint-config-airbnb-base@latest eslint-plugin-import@^2.20.1 @typescript-eslint/parser@latest
+
+
+05) Adicionar as seguintes propriedades no arquivo "settings/.json" do VS Code:
+
+    "[javascript]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": true
+        },
+    },
+    "[javascriptreact]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": true
+        },
+    },
+    "[typescript]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": true
+        },
+    },
+    "[typescriptreact]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": true
+        },
+    },
+
