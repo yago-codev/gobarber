@@ -4,5 +4,8 @@
   "main": "index.js",
   "repository": "https://github.com/yago-codev/gobarber.git",
   "author": "Yago Milano <yago.codev@gmail.com> (https://github.com/yago-codev)",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^3.8.3"
+  }
 }
