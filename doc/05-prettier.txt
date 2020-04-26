@@ -1,0 +1,76 @@
+01) Instalar o plugin do "Prettier" no VS Code.
+
+
+02) Instalando o Prettier, o ESLint Config Prettier e o ESLint Plugin Prettier:
+
+    yarn add prettier eslint-config-prettier eslint-plugin-prettier -D
+
+
+03) Configurando o "ESLint" para integrar o "Prettier":
+
+    {
+      "env": {
+        "es6": true,
+        "node": true
+      },
+      "extends": [
+        "airbnb-base",
+        "plugin:@typescript-eslint/recommended",  //  <<<<<<<<<
+        "prettier/@typescript-eslint",  //  <<<<<<<<<
+        "pluggin:prettier/recommended"  //  <<<<<<<<<
+      ],
+      "globals": {
+        "Atomics": "readonly",
+        "SharedArrayBuffer": "readonly"
+      },
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "ecmaVersion": 2018,
+        "sourceType": "module"
+      },
+      "plugins": [
+        "@typescript-eslint",
+        "prettier"  //  <<<<<<<<<
+      ],
+      "rules": {
+        "prettier/prettier": "error",  //  <<<<<<<<
+        "import/extensions": [
+          "error",
+          "ignorePackages",
+          {
+            "ts": "never"
+          }
+        ]
+      },
+      "settings": {
+        "import/resolver": {
+          "typescript": {}
+        }
+      }
+    }
+
+
+04) Criando o arquivo de configuração do "Prettier" na raíz do projeto:
+
+    prettier.config.js
+
+
+
+05) Estrutura do arquivo de configuração "prettier.config.js":
+
+    module.exports = {
+      singleQuote: true, // aspas simples
+      trailingComma: 'all', // inserindo vírgula no último item de arrays e objetos
+      arrowParams: 'avoid', // não colocar parênteses por volta de arrow functions quando tivermos somente 1 parâmetro
+    };
+
+
+06) Criando arquivo ".eslintignore" na raíz do projeto:
+
+
+    Porque?
+    Para fazermos com que o style-guide não seja aplicado a alguns arquivos que
+    não fazem parte dos arquivos de produção,
+    e portando não precisam que as regras do Prettier sejam aplicadas:
+
+    Estrutura do arquivo:
