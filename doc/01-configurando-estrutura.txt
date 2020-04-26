@@ -1,1 +1,39 @@
-01) 
+01) Instando o Express:
+
+    yarn add express
+
+
+02) Instalando o Typescript como dependencia de desenvolvimento:
+
+    yarn add typescript -D
+
+
+03) Gerando o arquivo de configuração do Typescript:
+
+    yarn tsc --init
+
+
+04) Criando a pasta "src" onde iremos colocar praticamente todos os arquivos da aplicação
+
+
+05) Criando o arquivo "server.ts" dentro da pasta "src"
+
+
+06) Como os arquivos de código estarão sempre na pasta "src", 
+    dentro do arquivo de configuração do TS poderemos descomentar 
+    a propriedade "rootDir", setando o valor "./src"
+
+    Além dessa proprieade,
+    também iremos descomentar o "outDir",
+    inserindo o valor "./dist"
+
+    Porque? 
+    Na propriedade "rootDir" nós estamos avisando o compilador do TS que 
+    nossos arquivos de desenvolvimento estão todos dentro da pasta "src".
+
+    Na propriedade "outDir" estamos avisando o compilador que 
+    queremos "buildar"/"trasnpilar" os arquivos TS dentro de
+    uma pasta chamada "dist", 
+    que será a pasta que será enviada pra produção. 
+
+    
