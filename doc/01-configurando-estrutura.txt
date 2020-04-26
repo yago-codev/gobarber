@@ -36,4 +36,113 @@
     uma pasta chamada "dist", 
     que será a pasta que será enviada pra produção. 
 
-    
+
+07) Trasnpilando o código:
+
+    yarn tsc
+
+
+08) Importando o Express dentro do arquivo "server.ts"
+
+    import express from 'express';
+
+
+09) Quando estivermos importando dependencias para o projeto, 
+    muitas vezes receberemos um erro por conta do TS, 
+    porque ele não será capaz de reconhecer o conteúdo dessa dependencia. 
+
+    Em alguns casos não haverá esse erro porque algumas dependencias já 
+    trazem consigo essa tipagem.
+
+    Mas nos casos onde o erro ocorrer, 
+    precisaremos instalar o pacote de tipagem da dependencia em questão.
+
+    A seguir iremos instalar a biblioteca de tipagem do Express:
+
+    yarn add @types/express -D
+
+
+10) Iniciando o Servidor:
+
+    import express from "express";
+
+    const app = express();
+
+    app.get("/", (request, response) => {
+      return response.json({ mensagem: "rota principal" });
+    });
+
+    app.listen(3333, () => {
+      console.log("Servidor rodando na porta 3333");
+    });
+
+
+11) Instalando o "ts-node-dev" como dependencia de desenvolvimento:
+
+    Através do "ts-node-dev" poderemos rodar diretamente o arquivo "server.ts"
+    O "ts-node-dev" faz o papel de trasnpilar o código, jogando ele na pasta de build, 
+    e ao mesmo tempo executa as resposabilidades do Nodemon.
+
+    yarn add ts-node-dev -D
+
+
+
+12) Criando scripts no "package.json":
+
+    {
+      "name": "gobarber",
+      "version": "1.0.0",
+      "main": "index.js",
+      "repository": "https://github.com/yago-codev/gobarber.git",
+      "author": "Yago Milano <yago.codev@gmail.com> (https://github.com/yago-codev)",
+      "license": "MIT",
+      "scripts": {  //  <<<<<<<<
+        "build": "tsc",  //  <<<<<<<<
+        "dev:server": "ts-node-dev src/server.ts"  //  <<<<<<<<
+      },  //  <<<<<<<<
+      "devDependencies": {
+        "@types/express": "^4.17.6",
+        "ts-node-dev": "^1.0.0-pre.44",
+        "typescript": "^3.8.3"
+      },
+      "dependencies": {
+        "express": "^4.17.1"
+      }
+    }
+
+
+
+13) Adicionando flag "--trasnpileOnly" no script "dev:server"
+
+    Porque? 
+    Essa flag vai fazer com que o "ts-node-dev" não verifique se
+    nosso código está certo ou errado. 
+    Através desse script iremos APENAS executar o "ts-node-dev", 
+    porque quem irá cuidar da parte de dizer se o código está certo ou não será o próprio VSCode.
+
+    Além dessa flag,
+    utilizaremos também o "--ignore-watch node_modules",
+    para evitarmos que o "ts-node-dev" tente ficar monitorando ou 
+    tentando converter o conteúdo da pasta node_modules.
+
+    {
+      "name": "gobarber",
+      "version": "1.0.0",
+      "main": "index.js",
+      "repository": "https://github.com/yago-codev/gobarber.git",
+      "author": "Yago Milano <yago.codev@gmail.com> (https://github.com/yago-codev)",
+      "license": "MIT",
+      "scripts": {
+        "build": "tsc",
+        "dev:server": "ts-node-dev --transpileOnly --ignore-watch node_modules src/server.ts"  // <<<<
+      },
+      "devDependencies": {
+        "@types/express": "^4.17.6",
+        "ts-node-dev": "^1.0.0-pre.44",
+        "typescript": "^3.8.3"
+      },
+      "dependencies": {
+        "express": "^4.17.1"
+      }
+    }
+
