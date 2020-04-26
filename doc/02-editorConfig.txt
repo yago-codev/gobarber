@@ -1,0 +1,17 @@
+01) Instalar o plugin do "EditorConfig for VS Code" no VSCode.
+
+
+02) Gerar o arquivo "editorConfig" na raíz do projeto.
+
+
+03) Estrutura do arquivo ".editorConfig" :
+
+    root = true
+
+    [*]
+    end_of_line = lf
+    indent_style = space
+    indent_size = 2
+    charset = utf-8
+    trim_trailing_whitespace = true # remove os espaços em branco no final de cada linha
+    insert_final_newline = true # insere uma linha em branco depois da última sentença de código
