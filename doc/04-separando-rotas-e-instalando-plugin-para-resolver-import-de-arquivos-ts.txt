@@ -1,0 +1,125 @@
+01) Criar a pasta "routes" dentro de "src".
+
+    Será dentro da pasta "routes" que irão ficar as rotas da aplicação.
+
+
+02) Criar o arquivo de entrada da pasta "routes":
+
+    routes/index.ts
+
+
+03) Estrutura do arquivo "index.ts":
+
+    import { Router } from 'express';
+
+    const routes = Router();
+
+    routes.get('/', (request, response) => response.json({ mensagem: 'rota principal' }));
+
+    export default routes;
+
+
+04) Importando as rotas para o arquivo "server.ts":
+
+    import express from 'express';
+
+    import routes from './routes';
+
+    const app = express();
+
+    app.listen(3333, () => {
+      console.log('Servidor rodando na porta 3333');
+    });
+
+
+05) Instalando plugin do "ESLint" para resolver o problema de importação de arquivos .TS:
+
+    yarn add eslint-import-resolver-typescript -D
+
+
+06) Acrescentando a propriedade "settings" para adicionarmos a configuração no ESLint que fará ele entender os arquivos ".ts":
+
+    {
+      "env": {
+        "es6": true,
+        "node": true
+      },
+      "extends": [
+        "airbnb-base"
+      ],
+      "globals": {
+        "Atomics": "readonly",
+        "SharedArrayBuffer": "readonly"
+      },
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "ecmaVersion": 2018,
+        "sourceType": "module"
+      },
+      "plugins": [
+        "@typescript-eslint"
+      ],
+      "rules": {},
+      "settings": {  //  <<<<<<<<<<
+        "import/resolver": {  //  <<<<<<<<<<
+          "typescript": {}  //  <<<<<<<<<<
+        }  //  <<<<<<<<<<
+      }  //  <<<<<<<<<<
+    }
+
+
+07) Adicionando regra no "ESLint" para fazer com que ele entenda que não precisamos especificar
+    a extensão de arquivos typescript ".ts" nas nossas importacões:
+
+    {
+      "env": {
+        "es6": true,
+        "node": true
+      },
+      "extends": [
+        "airbnb-base"
+      ],
+      "globals": {
+        "Atomics": "readonly",
+        "SharedArrayBuffer": "readonly"
+      },
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "ecmaVersion": 2018,
+        "sourceType": "module"
+      },
+      "plugins": [
+        "@typescript-eslint"
+      ],
+      "rules": {  //  <<<<<<<<<<<<<<<,
+        "import/extensions": [  //  <<<<<<<<<<<<<<<,
+          "error",  //  <<<<<<<<<<<<<<<,
+          "ignorePackages",  //  <<<<<<<<<<<<<<<,
+          {  //  <<<<<<<<<<<<<<<,
+            "ts": "never"  //  <<<<<<<<<<<<<<<,
+          }  //  <<<<<<<<<<<<<<<,
+        ]  //  <<<<<<<<<<<<<<<,
+      },  //  <<<<<<<<<<<<<<<,
+      "settings": {
+        "import/resolver": {
+          "typescript": {}
+        }
+      }
+    }
+
+
+08) Utilizando a função "use()" para integrarmos nossas rotas ao express no arquivo "server.ts":
+
+    import express from 'express';
+
+    import routes from './routes';
+
+    const app = express();
+
+    app.use(routes);  //  <<<<<<<<<<<<
+
+    app.listen(3333, () => {
+      console.log('Servidor rodando na porta 3333');
+    });
+
+
