@@ -1,9 +1,9 @@
 import { Router } from 'express';
 
+import appointmentsRouter from './appoinments.routes';
+
 const routes = Router();
 
-routes.get('/', (request, response) =>
-  response.json({ mensagem: 'rota principal' }),
-);
+routes.use('/appointments', appointmentsRouter);
 
 export default routes;

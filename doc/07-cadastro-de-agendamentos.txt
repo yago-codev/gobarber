@@ -1,0 +1,213 @@
+01) Começaremos a dividir os arquivos de rotas de acordo com cada entidade da aplicação.
+
+    A seguir começaremos a implementar a rota de "agendamentos" da aplicação.
+    Dentro dessa entidade "agendamentos", teremos a parte de "criação de angedamentos",
+    "cancelamento de angedamentos"...
+    Ou seja, tudo que estiver relacionado aos "agendamentos" serão mantidos dentro de
+    um arquivo especifico, que será criado agora:
+
+    src/routes/appointments.routes.ts
+
+
+02) Estrutura do arquivo "appointments.routes.ts":
+
+    import { Router } from 'express';
+
+    const appointments = Router();
+
+    export default appointments;
+
+
+03) Importando o roteador do "appointments" para dentro do arquivo de entrada da pasta "routes":
+
+    OBS: isso será feito para todas as demais entidades.
+    Desse modo conseguiremos organizar muito bem nossas rotas.
+
+    Para que cada endereço requisitado na aplicação aponte para
+    o arquivo de roteamento correto,
+    iremos utilizar a função "use()",
+    passando 2 parâmetros para que consigamos integrar o "endereço/arquivo de roteamento":
+
+    import { Router } from 'express';
+
+    import appointmentsRouter from './appoinments.routes';  // <<<<<<<<<<
+
+    const routes = Router();
+
+    routes.use('/appoitments', appointmentsRouter);  // <<<<<<<<<<
+
+    export default routes;
+
+
+04) Criando rota de testes para o roteador da entidade "appoinments":
+
+    import { Router } from 'express';
+
+    const appointmentsRouter = Router();
+
+    appointmentsRouter.post('/', (request, response) => {
+      return response.json({ message: 'ok' });
+    });
+
+    export default appointmentsRouter;
+
+
+05) Testando o endpoint através do Insomnia.
+
+    Como?
+    Criando um novo Workspace e fazendo a requisição para a rota definida.
+
+
+06) Criando array para armazenar os "agendamentos" em memória, somente para treinarmos:
+
+    import { Router } from 'express';
+
+    const appointmentsRouter = Router();
+
+    const appointments = [];  //  <<<<<<<<<<<<<<
+
+    appointmentsRouter.post('/', (request, response) => {
+      return response.json({ message: 'ok' });
+    });
+
+    export default appointmentsRouter;
+
+
+07) Pegando os dados enviados pelo usuário no corpo da requisição e
+    criando uma constante para armazenar esses dados:
+
+    import { Router } from 'express';
+
+    const appointmentsRouter = Router();
+
+    const appointments = [];
+
+    appointmentsRouter.post('/', (request, response) => {
+      const { provider, date } = request.body;  //  <<<<<<<<<<
+
+      const appointment = {  //  <<<<<<<<<<
+        provider,  //  <<<<<<<<<<
+        date,  //  <<<<<<<<<<
+      };  //  <<<<<<<<<<
+
+      return response.json({ message: 'ok' });
+    });
+
+    export default appointmentsRouter;
+
+
+08) Instalando a biblioteca "uuidv4" para gerarmos id's:
+
+    yarn add uuidv4
+
+
+09) Importando a função { uuid } do "uuidv4":
+
+    import { Router } from 'express';
+    import { uuid } from 'uuidv4';  //  <<<<<<<<<<
+
+    const appointmentsRouter = Router();
+
+    const appointments = [];
+
+    appointmentsRouter.post('/', (request, response) => {
+      const { provider, date } = request.body;
+
+      const appointment = {
+        provider,
+        date,
+      };
+
+      return response.json({ message: 'ok' });
+    });
+
+    export default appointmentsRouter;
+
+
+10) Inserindo a propriedade "id" dentro da variável que armazena o "provider" e o "date" do corpo da requisição:
+
+    import { Router } from 'express';
+    import { uuid } from 'uuidv4';
+
+    const appointmentsRouter = Router();
+
+    const appointments = [];
+
+    appointmentsRouter.post('/', (request, response) => {
+      const { provider, date } = request.body;
+
+      const appointment = {
+        id: uuid(),
+        provider,
+        date,
+      };
+
+      return response.json({ message: 'ok' });
+    });
+
+    export default appointmentsRouter;
+
+
+11) Salvando os dados do agendamento dentro do array de agendamentos:
+
+    import { Router } from 'express';
+    import { uuid } from 'uuidv4';
+
+    const appointmentsRouter = Router();
+
+    const appointments = [];
+
+    appointmentsRouter.post('/', (request, response) => {
+      const { provider, date } = request.body;
+
+      const appointment = {
+        id: uuid(),
+        provider,
+        date,
+      };
+
+      appointments.push(appointment);  //  <<<<<<<<
+
+      return response.json(appointment);
+    });
+
+    export default appointmentsRouter;
+
+
+
+12) Retornando a resposta contendo os dados do agendamento:
+
+    import { Router } from 'express';
+    import { uuid } from 'uuidv4';
+
+    const appointmentsRouter = Router();
+
+    const appointments = [];
+
+    appointmentsRouter.post('/', (request, response) => {
+      const { provider, date } = request.body;
+
+      const appointment = {
+        id: uuid(),
+        provider,
+        date,
+      };
+
+      appointments.push(appointment);
+
+      return response.json(appointment);  //  <<<<<<<<<
+    });
+
+    export default appointmentsRouter;
+
+
+13) Agora já podemos testar a requisição pelo Insomnia,
+    enviando um json no formato:
+
+    {
+      "provider": "nome do provider",
+      "date": "Timestamp -> ISO-8601"
+    }
+
+    OBS: Esse formato "Timestamp -> ISO-8601" é obtido pelo próprio Insomnia através do atalho "ctrl + barra de espaço",
+    e através dele retornamos um "timestamp contendo a data/horas atuais".
