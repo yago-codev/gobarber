@@ -1,0 +1,122 @@
+01) O que são repositórios?
+
+    Um repositório é uma conexão entre a persistência,
+    ou seja, a persitência dos dados da aplicação,
+    seja em um banco de dados ou qualquer outro lugar onde esses dados estejam sendo persistidos,
+    e a nossa rota.
+
+    Persistência <-> Repositório <-> Rota
+
+
+02) Qual o conteúdo de um repositório?
+
+    É dentro do arquivo de repositório onde iremos executar a
+    querie de buscar algum registro no banco de dados,
+    portanto dentro do "repositórios" nós podemos ter uma função "find()"
+
+    Dentro do arquivo de "repositórios" nós vamos ter uma função "create()",
+    para fazer a inserção de um novo registro no banco de dados...
+
+    ...
+
+    Geralmente teremos um repositório para cada Model...
+
+
+03) Criando a pasta "repositories" dentro de "src"
+
+
+04) Criando o arquivo de "repositories" para o Model de "Appointment"
+
+    src/repositories/AppointmentsRepository.ts
+
+
+05) A estrutura dos "respositories" também serão escritas em formato de Classe:
+
+    Iremos remover a parte de criação de um novo "appointment" do arquivo "appointments.routes.ts".
+    ----> const appointment = new Appointment(provider, parsedDate);
+
+    Estamos removendo essa sentença de código porque quem irá cuidar disso é o nosso "repository".
+
+
+    Estrutura do repository de Appointment ("AppointmentsRepository.ts"):
+
+
+    import { isEqual } from 'date-fns';
+
+    import Appointment from '../models/Appointment';
+
+    class AppointmentsRepository {
+      private appointments: Appointment[];
+
+      constructor() {
+        this.appointments = [];
+      }
+
+      public create(provider: string, date: Date): Appointment {
+        const appointment = new Appointment(provider, date);
+
+        this.appointments.push(appointment);
+
+        return appointment;
+      }
+
+      public findByDate(date: Date): Appointment | null {
+        const findAppointment = this.appointments.find((appointment) =>
+          isEqual(date, appointment.date),
+        );
+
+        return findAppointment || null;
+      }
+    }
+
+    export default AppointmentsRepository;
+
+
+
+06) Importando o "AppointmentsRepository" dentro do arquivo "appointments.rotes.ts":
+
+    No lugar do array onde estávemos armazenando os agendamentos,
+    iremos instanciar o AppointmentsRepository porque não vamos mais realizar a parte de
+    verificação condicional dentro do arquivo de rotas,
+    mas sim dentro do "AppointmentsRepository", como já mencionado.
+
+    Na classe AppointmentsRepository teremos um método chamado "findByDate()",
+    que será utilizado para verificarmos se existe algum registro com a mesma data do que
+    o registro que está sendo digitado pelo usuário:
+
+    ...
+
+    Estrutura final do arquivo de rotas "appointments.routes.ts":
+
+
+    import { Router } from 'express';
+    import { startOfHour, parseISO } from 'date-fns';
+
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+
+    const appointmentsRouter = Router();
+
+    const appointmentsRepository = new AppointmentsRepository();
+
+    appointmentsRouter.post('/', (request, response) => {
+      const { provider, date } = request.body;
+
+      const parsedDate = startOfHour(parseISO(date));
+
+      const findAppointmentInSameDate = appointmentsRepository.findByDate(
+        parsedDate,
+      );
+
+      if (findAppointmentInSameDate) {
+        return response.status(400).json({
+          message:
+            'O horário escolhido não está disponível, por favor, tente outro.',
+        });
+      }
+
+      const appointment = appointmentsRepository.create(provider, parsedDate);
+
+      return response.json(appointment);
+    });
+
+    export default appointmentsRouter;
