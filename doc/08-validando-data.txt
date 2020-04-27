@@ -1,0 +1,258 @@
+01) A seguir iremos implementar duas condições diferentes para
+    o agendamento, baseando-se na hora inserida pelo usuário:
+
+    -> No momento é possível que clientes façam agendamentos em um mesmo horário,
+    portanto teremos que implementar uma condição para que isso não ocorra.
+
+    -> Iremos implementar uma lógica para que os agendamentos sejam feitos de hora em hora,
+    considerando que o atendimento leve cerca de 1 hora.
+
+
+02) A primeira coisa que faremos é permitir que o agendamento seja feito de hora em hora:
+
+    Para tratarmos "datas/horarios",
+    instalaremos uma biblioteca chamada "date-fns"
+
+    yarn add date-fns
+
+
+03) Dentro do arquivo "appointments.routes.ts" iremos importar a função "startOfHour" e o "parseISO" da lib "date-fns":
+
+    import { Router } from 'express';
+    import { uuid } from 'uuidv4';
+    import { startOfHour, parseISO } from 'date-fns';  //  <<<<<<<<
+
+    const appointmentsRouter = Router();
+
+    const appointments = [];
+
+    appointmentsRouter.post('/', (request, response) => {
+      const { provider, date } = request.body;
+
+      const appointment = {
+        id: uuid(),
+        provider,
+        date,
+      };
+
+      appointments.push(appointment);
+
+      return response.json(appointment);
+    });
+
+    export default appointmentsRouter;
+
+
+04) A função "parseISO" irá converter uma "string", que é a forma como estamos enviando a data pelo Insomnia,
+    para um formato "Date", ou seja, um objeto Date, nativo do JS.
+
+    A função "startOfHour" irá pegar um horário, resetando/arredondando ele para a hora em questão.
+    Por exemplo: 13:45:39 -> 13:00:00
+
+    ...
+
+    A seguir faremos o "parse" da data que foi capturada no corpo da requisição,
+    contedendo-a de "string" para o formato nativo "Date".
+    Esse "parse" será envolvido pela função "startOfHour",
+    desse modo obteremos a hora "parseada e convertida",
+    de modo muito simples e eficiente!
+
+    import { Router } from 'express';
+    import { uuid } from 'uuidv4';
+    import { startOfHour, parseISO } from 'date-fns';
+
+    const appointmentsRouter = Router();
+
+    const appointments = [];
+
+    appointmentsRouter.post('/', (request, response) => {
+      const { provider, date } = request.body;
+
+      const parsedDate = startOfHour(parseISO(date));  //  <<<<<<<<<<<
+
+      const appointment = {
+        id: uuid(),
+        provider,
+        parseDate,  //  <<<<<<<<<<<
+      };
+
+      appointments.push(appointment);
+
+      return response.json(appointment);
+    });
+
+    export default appointmentsRouter;
+
+
+
+05) Testando o tratamento de data na prática através do Insomnia:
+
+    Dados enviados na requisição:
+
+    {
+	    "provider": "lineu bondoso",
+	    "date": "{% now 'iso-8601', '' %}"
+    }
+
+    Dados enviados na resposta da requisição:
+
+    {
+      "id": "fa947ba7-a6c8-4e30-b0d9-c2a356f06166",
+      "provider": "lineu bondoso",
+      "parseDate": "2020-04-27T01:00:00.000Z"
+    }
+
+
+06) Agora chegou a vez de implementarmos a lógica para não deixar que dois agendamentos ocorram no mesmo horário:
+
+    Para fazermos a comparação entre das datas para checarmos se elas são iguais,
+    iremos incluir a função "isEqual" na desestruturação da lib "date-fns".
+
+    Utilizaremos essa função em conbinação com o "find()",
+    que será aplicado no nosso array de "appointments":
+
+    Ou seja,
+    utilizaremos a função find para buscar dentro do array de appointments algum
+    registro que coincida com o horário que foi inserido pelo usuário.
+
+    import { Router } from 'express';
+    import { uuid } from 'uuidv4';
+    import { startOfHour, parseISO, isEqual } from 'date-fns';  //  <<<<<<<<
+
+    const appointmentsRouter = Router();
+
+    const appointments = [];
+
+    appointmentsRouter.post('/', (request, response) => {
+      const { provider, date } = request.body;
+
+      const parsedDate = startOfHour(parseISO(date));
+
+      const findAppointmentInSameDate = appointments.find((appointment) =>  //  <<<<<<<<<<<
+        isEqual(parsedDate, appointment.date),  //  <<<<<<<<<<<
+      );  //  <<<<<<<<<<<
+
+      const appointment = {
+        id: uuid(),
+        provider,
+        date: parseDate,
+      };
+
+      appointments.push(appointment);
+
+      return response.json(appointment);
+    });
+
+    export default appointmentsRouter;
+
+
+07) Se tivermos encontrado algum registro que possui o mesmo horário que o informado pelo usuário,
+    iremos retornar um erro através de um HTTP Status Code,
+    seguida por uma mensagem em JSON.
+
+    import { Router } from 'express';
+    import { uuid } from 'uuidv4';
+    import { startOfHour, parseISO, isEqual } from 'date-fns';
+
+    const appointmentsRouter = Router();
+
+    const appointments = [];
+
+    appointmentsRouter.post('/', (request, response) => {
+      const { provider, date } = request.body;
+
+      const parsedDate = startOfHour(parseISO(date));
+
+      const findAppointmentInSameDate = appointments.find((appointment) =>
+        isEqual(parsedDate, appointment.date),
+      );
+
+      if (findAppointmentInSameDate) {  //  <<<<<<<<<
+        return response.status(400).json({  //  <<<<<<<<<
+          message:  //  <<<<<<<<<
+            'O horário escolhido não está disponível, por favor, tente outro.',  //  <<<<<<<<<
+        });  //  <<<<<<<<<
+      }  //  <<<<<<<<<
+
+      const appointment = {
+        id: uuid(),
+        provider,
+        date: parseDate,
+      };
+
+      appointments.push(appointment);
+
+      return response.json(appointment);
+    });
+
+    export default appointmentsRouter;
+
+
+08) Agora precisaremos "tipar" o array "appointments",
+    porque o "TS" não é capaz de enxergar o que existe dentro desse array,
+    ou seja, ele não consegue utilizar-se de seu poder de inferencia de tipos para
+    "diagnosticar" o tipo desse array.
+
+    Como isso será corrigido?
+    Para corrigirmos isso,
+    criaremos uma "interface".
+
+    Como será constituida essa "interface"?
+    Precisaremos apenas incluir as informações que
+    estarão presentes dentro do "array".
+
+    E quais são as informações desse array?
+    São as propriedades: "id", "provider"e "date".
+
+    import { Router } from 'express';
+    import { uuid } from 'uuidv4';
+    import { startOfHour, parseISO, isEqual } from 'date-fns';
+
+    const appointmentsRouter = Router();
+
+    interface Appointment {  //  <<<<<<<<<<<<<<
+      id: string;  //  <<<<<<<<<<<<<<
+      provider: string;  //  <<<<<<<<<<<<<<
+      date: Date;  //  <<<<<<<<<<<<<<
+    }  //  <<<<<<<<<<<<<<
+
+    const appointments: Appointment[] = [];  //  <<<<<<<<<<<<<<
+
+    appointmentsRouter.post('/', (request, response) => {
+      const { provider, date } = request.body;
+
+      const parsedDate = startOfHour(parseISO(date));
+
+      const findAppointmentInSameDate = appointments.find((appointment) =>
+        isEqual(parsedDate, appointment.date),
+      );
+
+      if (findAppointmentInSameDate) {
+        return response.status(400).json({
+          message:
+            'O horário escolhido não está disponível, por favor, tente outro.',
+        });
+      }
+
+      const appointment = {
+        id: uuid(),
+        provider,
+        date: parseDate,
+      };
+
+      appointments.push(appointment);
+
+      return response.json(appointment);
+    });
+
+    export default appointmentsRouter;
+
+
+09) Pronto, com isso já teremos as duas condições atendidas:
+
+    Não permitimos agendamentos de horário duplicados, ou seja,
+    não é possível efetuar um agendamento em um horario que já tenha sido agendado antes.
+
+    Além disso,
+    estamos fazendo o parse da data informada,
+    transformando-a de "string" para "date", e ao mesmo tempo arredondando seu horário para uma hora exata.

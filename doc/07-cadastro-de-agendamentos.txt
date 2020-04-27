@@ -204,6 +204,8 @@
 13) Agora já podemos testar a requisição pelo Insomnia,
     enviando um json no formato:
 
+    Formato da requisição:
+
     {
       "provider": "nome do provider",
       "date": "Timestamp -> ISO-8601"
@@ -211,3 +213,14 @@
 
     OBS: Esse formato "Timestamp -> ISO-8601" é obtido pelo próprio Insomnia através do atalho "ctrl + barra de espaço",
     e através dele retornamos um "timestamp contendo a data/horas atuais".
+
+
+    Formato do resposta:
+
+    {
+      "id": "e11c0a9c-2f63-4c63-8339-c67b80f28892",
+      "provider": "yago milano",
+      "date": "2020-04-27T00:07:01.700Z"
+    }
+
+
