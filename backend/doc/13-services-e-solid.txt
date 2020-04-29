@@ -1,0 +1,741 @@
+01) o que faremos a seguir é aplicar um dos conceitos mais importantes da
+    arquitetura de software, que é o Service.
+
+    O Service pode ser traduzido de varias formas diferentes,
+    em vários tipos de arquiteturas ele é chamado de uma maneira...
+
+    Em nossos projetos trabalharemos e nomearemos esse padrão como "Service".
+
+
+02) Criando pasta "services" dentro da pasta "src".
+
+
+03) Mas o que são os "services"?
+
+    -> Até o momento já criamos o nosso "model",
+    que é a representação de como um dado é salvo dentro da aplicação.
+    Ou seja, como um dado é composto, quais são os campos dele.
+
+    -> Criamos também o(s) respositories,
+    que é onde definimos os métodos para trabalhar/manipular esses dados.
+    Ou seja, é através do "repository" que iremos "criar, listar, deletar, atualizar"...
+
+    -> Mas e o "service", qual o papel dele?
+    É no "service" que iremos armazenar a regra de negócios da aplicação.
+
+    Como identificar uma regra de negócios?
+    Podemos identificar uma regra de negócios quando estamos criando
+    alguma estrutura condicional para fazer uma verificação antes de fazermos uma inclusão no banco de dados.
+
+
+04) Refatorando a rota "post" de criação de agendamentos para movermos sua regra de negócios para um "service":
+
+    OBS: a única responsabilidade de uma rota deve ser:
+    -> Receber a requisição, chamar outro arquivo pra tratar a requisição, e devolver uma resposta.
+
+
+05) Criando o arquivo do "service" da rota de criação de um novo agendamento:
+
+    OBS: O "serviço" tem SEMPRE UMA UNICA RESPONSABILIDADE.
+    Nesse caso da rota de criação de um novo agendamento,
+    nosso serviço se responsabilizará apenas de criar um novo agendamento.
+
+    src/services/CreateAppointmentService.ts
+
+
+06) Estrutura do service CreateAppointmentService:
+
+    Esse arquivo será escrito em formato de Classe.
+
+    ...
+
+
+    06.1) A primeira coisa que precisaremos é fazer a importação do model de appointment para
+    podermos manipular esses dados.
+
+    import Appointment from '../models/Appointment';  //  <<<<<<<
+
+    class CreateAppointmentService {  //  <<<<<<<
+
+    }  //  <<<<<<<
+
+
+    06.2) Cada "service" terá apenas um único método,
+    e esse método será chamado de "execute".
+
+    Podemos encontrar esse método nomeado como "run",
+    mas vai servir pra mesma finalidade,
+    que é realizar a execução daquilo ao qual o service se propõe:
+
+    import Appointment from '../models/Appointment';
+
+    class CreateAppointmentService {
+      public execute() {  //  <<<<<<<<<<
+
+      }  //  <<<<<<<<<<
+    }
+
+
+07) Refatorando a rota de criação de um novo agendamento:
+
+    -> A primeira coisa que temos que entender é
+    que existe uma distinção entre transformação de dados, e regra de negócios.
+
+    Vejamos o seguinte exemplo destacado:
+
+    import { Router } from 'express';
+    import { startOfHour, parseISO } from 'date-fns';
+
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+
+    const appointmentsRouter = Router();
+
+    const appointmentsRepository = new AppointmentsRepository();
+
+    appointmentsRouter.get('/', (request, response) => {
+      const appointments = appointmentsRepository.All();
+
+      return response.json(appointments);
+    });
+
+    appointmentsRouter.post('/', (request, response) => {
+      const { provider, date } = request.body;
+
+      const parsedDate = startOfHour(parseISO(date));  //  <<<<<<<<<<<
+
+      const findAppointmentInSameDate = appointmentsRepository.findByDate(
+        parsedDate,
+      );
+
+      if (findAppointmentInSameDate) {
+        return response.status(400).json({
+          message:
+            'O horário escolhido não está disponível, por favor, tente outro.',
+        });
+      }
+
+      const appointment = appointmentsRepository.create({
+        provider,
+        date: parsedDate,
+      });
+
+      return response.json(appointment);
+    });
+
+    export default appointmentsRouter;
+
+
+    ...
+
+    Dentro da constante "parsedDate", temos duas funções sendo aplicadas ao mesmo dado,
+    sendo que cada uma dessas funções executa algo que se aplica
+    a uma regra distinta.
+
+    -> A função "parseISO()" está TRANSFORMANDO os dados.
+
+    -> A função "startOfHour()" possui responsabilidade na regra de negócios,
+    porque vai fazer com que a partir dela possamos fazer um agendamento APENAS de hora em hora.
+
+    ...
+
+    Portanto o que faremos a seguir é dividir a forma como estamos
+    lidando com a data,
+    fazendo com que cada função seja atribuída a uma constante diferente:
+
+    import { Router } from 'express';
+    import { startOfHour, parseISO } from 'date-fns';
+
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+
+    const appointmentsRouter = Router();
+
+    const appointmentsRepository = new AppointmentsRepository();
+
+    appointmentsRouter.get('/', (request, response) => {
+      const appointments = appointmentsRepository.All();
+
+      return response.json(appointments);
+    });
+
+    appointmentsRouter.post('/', (request, response) => {
+      const { provider, date } = request.body;
+
+      const parsedDate = parseISO(date);  //  <<<<<<<<
+      const appointmentDate = startOfHour(parsedDate);  //  <<<<<<<<
+
+      const findAppointmentInSameDate = appointmentsRepository.findByDate(
+        parsedDate,
+      );
+
+      if (findAppointmentInSameDate) {
+        return response.status(400).json({
+          message:
+            'O horário escolhido não está disponível, por favor, tente outro.',
+        });
+      }
+
+      const appointment = appointmentsRepository.create({
+        provider,
+        date: appointmentDate,  //  <<<<<<<<
+      });
+
+      return response.json(appointment);
+    });
+
+    export default appointmentsRouter;
+
+
+08) Movendo a regra de negócios pro arquivo de "service":
+
+    O que será movido (regra de negócios):
+
+    const appointmentDate = startOfHour(parsedDate);  //  <<<<<<<<<<<<<<
+
+    const findAppointmentInSameDate = appointmentsRepository.findByDate(  //  <<<<<<<<<<<<<<
+      parsedDate,  //  <<<<<<<<<<<<<<
+    );  //  <<<<<<<<<<<<<<
+
+    if (findAppointmentInSameDate) {  //  <<<<<<<<<<<<<<
+      return response.status(400).json({  //  <<<<<<<<<<<<<<
+        message:
+          'O horário escolhido não está disponível, por favor, tente outro.',  //  <<<<<<<<<<<<<<
+      });  //  <<<<<<<<<<<<<<
+    }  //  <<<<<<<<<<<<<<
+
+    const appointment = appointmentsRepository.create({  //  <<<<<<<<<<<<<<
+      provider,  //  <<<<<<<<<<<<<<
+      date: appointmentDate,  //  <<<<<<<<<<<<<<
+    });  //  <<<<<<<<<<<<<<
+
+
+09) Agora começaremos a resolver os problemas do CreateAppointmentService aos poucos.
+
+    -> o primeiro problema resolvido será o recebimento dos parâmetros necessários para
+    realizar a criação de um novo agendamento, que são os paâmetros "provider" e "date".
+
+    Para podermos receber esses parâmetros,
+    precisaremos criar uma "interface" que será chamada de "Request",
+    afinal de contas, esses parâmetros recebidos são os
+    parâmetros vindos do req.body da requisição.
+
+    import Appointment from '../models/Appointment';
+
+    interface Request {  //  <<<<<<<,
+      provider: string;  //  <<<<<<<,
+      date: Date;  //  <<<<<<<,
+    }  //  <<<<<<<,
+
+    class CreateAppointmentService {
+      public execute(): Appointment {
+        const appointmentDate = startOfHour(parsedDate);
+
+        const findAppointmentInSameDate = appointmentsRepository.findByDate(
+          parsedDate,
+        );
+
+        if (findAppointmentInSameDate) {
+          return response.status(400).json({
+            message:
+              'O horário escolhido não está disponível, por favor, tente outro.',
+          });
+        }
+
+        const appointment = appointmentsRepository.create({
+          provider,
+          date: appointmentDate,
+        });
+
+        return appointment;
+      }
+    }
+
+    export default CreateAppointmentService;
+
+
+    ...
+
+
+    Agora precisaremos declarar essa interface dentro dos parâmetros da Classe,
+    e para fazermos isso, utilizaremos a desestruturação do TS:
+
+
+    import Appointment from '../models/Appointment';
+
+    interface Request {
+      provider: string;
+      date: Date;
+    }
+
+    class CreateAppointmentService {
+      public execute({provider, date}: Request): Appointment {  //  <<<<<<<<<
+        const appointmentDate = startOfHour(date);
+
+        const findAppointmentInSameDate = appointmentsRepository.findByDate(
+          parsedDate,
+        );
+
+        if (findAppointmentInSameDate) {
+          return response.status(400).json({
+            message:
+              'O horário escolhido não está disponível, por favor, tente outro.',
+          });
+        }
+
+        const appointment = appointmentsRepository.create({
+          provider,
+          date: appointmentDate,
+        });
+
+        return appointment;
+      }
+    }
+
+    export default CreateAppointmentService;
+
+
+10) Agora iremos modificar a forma de tratamento de erros,
+    realizando apenas um "throw":
+
+    import Appointment from '../models/Appointment';
+
+    interface Request {
+      provider: string;
+      date: Date;
+    }
+
+    class CreateAppointmentService {
+      public execute({provider, date}: Request): Appointment {
+        const appointmentDate = startOfHour(date);
+
+        const findAppointmentInSameDate = appointmentsRepository.findByDate(
+          parsedDate,
+        );
+
+        if (findAppointmentInSameDate) {
+          throw Error('O horário escolhido não está disponível, por favor, tente outro.');  //  <<<<<<
+        }
+
+        const appointment = appointmentsRepository.create({
+          provider,
+          date: appointmentDate,
+        });
+
+        return appointment;
+      }
+    }
+
+    export default CreateAppointmentService;
+
+
+11) O "service" NAO tem acesso direto aos dados da requisição e nem aos dados da resposta!
+    A parte de tratativa de erros será realizada na própria rota.
+
+    ***** A seguir iremos aplicar um dos princípios do SOLID,
+    que é o "Dependency Inversion".
+
+    Ele será utilizado dentro do "service" CreateAppointmentService porque
+    não iremos instanciar um novo objeto de "AppointmentsRepository",
+    ao invés disso iremos receber-lo por parâmetro.
+
+    Esse princípio irá facilitar pra que a nossa aplicação,
+    independente de quantos "services" diferentes estejam trabalhando com
+    a parte de "appointment",
+    todos eles estarão trabalhando com o mesmo "repository" de appointments,
+    e não repositórios diferentes, criados em cada um dos "services".
+
+    ...
+
+    Recebendo o "appointmentsRepository" por parâmetro no construtor da classe:
+
+    OBS: para obtermos o tipo de "appointmentsRepository",
+    iremos importar-lo, pois será preciso declarar seu tipo dentro do construtor:
+
+    Ou seja, quando quisermos que o parâmetro de uma classe seja outra classe,
+    iremos importar essa classe para usar seu modelo como tipo.
+
+
+    import Appointment from '../models/Appointment';
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';  //  <<<<<<<<<<<<
+
+    interface Request {
+      provider: string;
+      date: Date;
+    }
+
+    class CreateAppointmentService {
+      constructor(appointmentsRepository: AppointmentsRepository) {  //  <<<<<<<<<<<<
+
+      }
+
+      public execute({provider, date}: Request): Appointment {
+        const appointmentDate = startOfHour(date);
+
+        const findAppointmentInSameDate = appointmentsRepository.findByDate(
+          parsedDate,
+        );
+
+        if (findAppointmentInSameDate) {
+          throw Error('O horário escolhido não está disponível, por favor, tente outro.');
+        }
+
+        const appointment = appointmentsRepository.create({
+          provider,
+          date: appointmentDate,
+        });
+
+        return appointment;
+      }
+    }
+
+    export default CreateAppointmentService;
+
+
+12) O próximo passo será criar uma variável privada dentro da classe,
+    que será do tipo/classe "AppointmentsRepository".
+
+    Dentro do método construtor iremos criar um atributo que
+    irá receber essa variável que foi criada:
+
+
+    import Appointment from '../models/Appointment';
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+
+    interface Request {
+      provider: string;
+      date: Date;
+    }
+
+    class CreateAppointmentService {
+      private appointmentsRepository: AppointmentsRepository;  //  <<<<<<<
+
+      constructor(appointmentsRepository: AppointmentsRepository) {
+        this.appointmentsRepository = appointmentsRepository;  // <<<<<<<<<
+      }
+
+      public execute({provider, date}: Request): Appointment {
+        const appointmentDate = startOfHour(date);
+
+        const findAppointmentInSameDate = appointmentsRepository.findByDate(
+          parsedDate,
+        );
+
+        if (findAppointmentInSameDate) {
+          throw Error('O horário escolhido não está disponível, por favor, tente outro.');
+        }
+
+        const appointment = appointmentsRepository.create({
+          provider,
+          date: appointmentDate,
+        });
+
+        return appointment;
+      }
+    }
+
+    export default CreateAppointmentService;
+
+
+13) Agora que já possuímos o "appointmentsRepository" disponível dentro da classe como um atributo,
+    iremos substituir todas as incidencias do "aapointmentsRepository" que
+    foi trazido quando transportamos a parte da regra de negócios da rota de criação de agendamentos:
+
+
+    import Appointment from '../models/Appointment';
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+
+    interface Request {
+      provider: string;
+      date: Date;
+    }
+
+    class CreateAppointmentService {
+      private appointmentsRepository: AppointmentsRepository;
+
+      constructor(appointmentsRepository: AppointmentsRepository) {
+        this.appointmentsRepository = appointmentsRepository;
+      }
+
+      public execute({provider, date}: Request): Appointment {
+        const appointmentDate = startOfHour(date);
+
+        const findAppointmentInSameDate = this.appointmentsRepository.findByDate(  //  <<<<<<<<<<<<,
+          parsedDate,
+        );
+
+        if (findAppointmentInSameDate) {
+          throw Error('O horário escolhido não está disponível, por favor, tente outro.');
+        }
+
+        const appointment = this.appointmentsRepository.create({  //  <<<<<<<<<<<<,
+          provider,
+          date: appointmentDate,
+        });
+
+        return appointment;
+      }
+    }
+
+    export default CreateAppointmentService;
+
+
+14) Substituindo o "parsedDate" que veio da rota de criação de
+    agendamentos pela constante "appointmentDate":
+
+
+    import Appointment from '../models/Appointment';
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+
+    interface Request {
+      provider: string;
+      date: Date;
+    }
+
+    class CreateAppointmentService {
+      private appointmentsRepository: AppointmentsRepository;
+
+      constructor(appointmentsRepository: AppointmentsRepository) {
+        this.appointmentsRepository = appointmentsRepository;
+      }
+
+      public execute({provider, date}: Request): Appointment {
+        const appointmentDate = startOfHour(date);
+
+        const findAppointmentInSameDate = this.appointmentsRepository.findByDate(
+          appointmentDate,  //  <<<<<<<<<
+        );
+
+        if (findAppointmentInSameDate) {
+          throw Error('O horário escolhido não está disponível, por favor, tente outro.');
+        }
+
+        const appointment = this.appointmentsRepository.create({
+          provider,
+          date: appointmentDate,
+        });
+
+        return appointment;
+      }
+    }
+
+    export default CreateAppointmentService;
+
+
+15) Importando a função { startOfHour } da lib "date-fns",
+    já que estamos usando essa função dentro da classe e não temos ela disponível:
+
+
+    import { startOfHour } from 'date-fns';  //  <<<<<<<<<<<
+
+    import Appointment from '../models/Appointment';
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+
+    interface Request {
+      provider: string;
+      date: Date;
+    }
+
+    class CreateAppointmentService {
+      private appointmentsRepository: AppointmentsRepository;
+
+      constructor(appointmentsRepository: AppointmentsRepository) {
+        this.appointmentsRepository = appointmentsRepository;
+      }
+
+      public execute({provider, date}: Request): Appointment {
+        const appointmentDate = startOfHour(date);  //  <<<<<<<<<<<<<<
+
+        const findAppointmentInSameDate = this.appointmentsRepository.findByDate(
+          appointmentDate,
+        );
+
+        if (findAppointmentInSameDate) {
+          throw Error('O horário escolhido não está disponível, por favor, tente outro.');
+        }
+
+        const appointment = this.appointmentsRepository.create({
+          provider,
+          date: appointmentDate,
+        });
+
+        return appointment;
+      }
+    }
+
+    export default CreateAppointmentService;
+
+
+16) Importando o "service" dentro do arquivo de rotas:
+
+
+    import { Router } from 'express';
+    import { startOfHour, parseISO } from 'date-fns';
+
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+    import CreateAppointmentService from '../services/CreateAppointmentService';  //  <<<<<<<<<<<<<
+
+    const appointmentsRouter = Router();
+
+    const appointmentsRepository = new AppointmentsRepository();
+
+    appointmentsRouter.get('/', (request, response) => {
+      const appointments = appointmentsRepository.All();
+
+      return response.json(appointments);
+    });
+
+    appointmentsRouter.post('/', (request, response) => {
+      const { provider, date } = request.body;
+
+      const parsedDate = parseISO(date);
+
+
+      return response.json(appointment);
+    });
+
+    export default appointmentsRouter;
+
+
+17) Instanciando a classe "CreateAppointmentService" dentro do arquivo de rotas,
+    mais especificamente na rota de criação de agendamento,
+    onde precisaremos enviar 1 parâmetro:
+
+    -> a instância do "repository",
+    que é onde temos os metódos que executam as queries que serão utilizadas.
+
+
+    import { Router } from 'express';
+    import { parseISO } from 'date-fns';
+
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+    import CreateAppointmentService from '../services/CreateAppointmentService';
+
+    const appointmentsRouter = Router();
+
+    const appointmentsRepository = new AppointmentsRepository();  //  <<<<<<<<<
+
+    appointmentsRouter.get('/', (request, response) => {
+      const appointments = appointmentsRepository.All();
+
+      return response.json(appointments);
+    });
+
+    appointmentsRouter.post('/', (request, response) => {
+      const { provider, date } = request.body;
+
+      const parsedDate = parseISO(date);
+
+      const createAppointment = new CreateAppointmentService(appointmentsRepository);  //  <<<<<<<<<<
+
+      return response.json(appointment);
+    });
+
+    export default appointmentsRouter;
+
+
+18) O próximo passo será criarmos uma constante que irá executar o
+    método "execute" do nosso "service",
+    passando em formato de objeto o "provider e o "date":
+
+
+    import { Router } from 'express';
+    import { parseISO } from 'date-fns';
+
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+    import CreateAppointmentService from '../services/CreateAppointmentService';
+
+    const appointmentsRouter = Router();
+
+    const appointmentsRepository = new AppointmentsRepository();
+
+    appointmentsRouter.get('/', (request, response) => {
+      const appointments = appointmentsRepository.All();
+
+      return response.json(appointments);
+    });
+
+    appointmentsRouter.post('/', (request, response) => {
+      const { provider, date } = request.body;
+
+      const parsedDate = parseISO(date);
+
+      const createAppointment = new CreateAppointmentService(appointmentsRepository);
+
+      const appointment = createAppointment.execute({ provider, date: parsedDate });  //  <<<<<<<<<<<<
+
+      return response.json(appointment);
+    });
+
+    export default appointmentsRouter;
+
+
+19) Tratativa de erros/exceções:
+
+    Como fazer com que o erro definido na classe CreateAppointmentService
+    chegue nas rotas?
+
+    Ou seja,
+    como iremos capturar o "throw" dentro da rota "post" de criação de agendamento?
+
+    Para resolvermos isso,
+    iremos envolver toda a nossa lógica que envolve a criação do agendamento dentro
+    de um bloco "try".
+
+    Logo abaixo iremos declarar um bloco "catch",
+    e dentro desse bloco "catch" nós teremos
+    o retorno de um json padrão,
+    retornando o http status code,
+    seguido pela mensagem em json que irá
+    retornar o "err.message".
+
+    Dentro do "err.message" nós teremos a mensagem
+    que vem da função global "Error" que foi definida na classe "CreateAppointmentService"
+
+
+    import { Router } from 'express';
+    import { parseISO } from 'date-fns';
+
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+    import CreateAppointmentService from '../services/CreateAppointmentService';
+
+    const appointmentsRouter = Router();
+
+    const appointmentsRepository = new AppointmentsRepository();
+
+    appointmentsRouter.get('/', (request, response) => {
+      const appointments = appointmentsRepository.All();
+
+      return response.json(appointments);
+    });
+
+    appointmentsRouter.post('/', (request, response) => {
+      try {  //  <<<<<<<<<<<
+        const { provider, date } = request.body;
+
+        const parsedDate = parseISO(date);
+
+        const createAppointment = new CreateAppointmentService(
+          appointmentsRepository,
+        );
+
+        const appointment = createAppointment.execute({
+          provider,
+          date: parsedDate,
+        });
+
+        return response.json(appointment);
+      } catch (err) {  //  <<<<<<<<
+        return response.status(400).json({ error: err.message });  //  <<<<<<<<<<
+      }  //  <<<<<<<<<<<
+    });
+
+    export default appointmentsRouter;
+
+
+20) Pronto,
+    agora nossa aplicação já encontra-se toda refatorada e funcional.
+
+    A seguir temos um link pra uma "documentação"
+    explicando mais sobre os conceitos de "repository",
+    "service" e "SOLID":
+
+    https://www.notion.so/Repository-service-e-patterns-82419cceb11c4c4fbbc055ade7fb1ac5

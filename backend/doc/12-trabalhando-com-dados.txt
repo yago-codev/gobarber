@@ -1,0 +1,250 @@
+01) A primeira coisa que faremos é refatorar o método "create" do objeto/repositório "AppointmentsRepository.ts":
+
+    Porque?
+    Porque no momento o método está pouco inteligente,
+    pois caso tenhamos qualquer tipo de alteração na estrutura da entidade/Model "Appointment",
+    o método "create" irá quebrar, pois escrevemos ele para receber somente 2 parâmetros.
+
+    ...
+
+    Como corrigir?
+    Iremos refatorar o método,
+    e ao invés de recebermos esses parâmetros fixos,
+    iremos utilizar o recurso do JS de "destruturação para nomearmos parâmetros"
+
+    ...
+
+    O primeiro passo a ser tomado é refatorarmos os parâmetros do método "create",
+    passando apenas um único parâmetro chamado "data", que será um objeto.
+
+    Como estaremos passando um parâmetro no formato de objeto,
+    precisaremos criar uma "interface" contendo a "tipagem" das propriedades desse objeto:
+
+    import { isEqual } from 'date-fns';
+
+    import Appointment from '../models/Appointment';
+
+    // DTO: Data Transfer Object
+    interface CreateAppointmentDTO {
+      provider: string;
+      date: Date;
+    }
+
+    class AppointmentsRepository {
+      private appointments: Appointment[];
+
+      constructor() {
+        this.appointments = [];
+      }
+
+      public create(data: CreateAppointmentDTO): Appointment {
+        const appointment = new Appointment(data.provider, data.date);
+
+        this.appointments.push(appointment);
+
+        return appointment;
+      }
+
+      public All(): Appointment[] {
+        return this.appointments;
+      }
+
+      public findByDate(date: Date): Appointment | null {
+        const findAppointment = this.appointments.find((appointment) =>
+          isEqual(date, appointment.date),
+        );
+
+        return findAppointment || null;
+      }
+    }
+
+    export default AppointmentsRepository;
+
+    ...
+
+    Podemos refatorar o parâmetro "data" do método "create" para
+    desestruturarmos os dados, extraindo o { provider, date } diretamente:
+
+    import { isEqual } from 'date-fns';
+
+    import Appointment from '../models/Appointment';
+
+    // DTO: Data Transfer Object
+    interface CreateAppointmentDTO {
+      provider: string;
+      date: Date;
+    }
+
+    class AppointmentsRepository {
+      private appointments: Appointment[];
+
+      constructor() {
+        this.appointments = [];
+      }
+
+      public create({ provider, date }: CreateAppointmentDTO): Appointment {  //  <<<<<<<<<<<<<<<<<<
+        const appointment = new Appointment(provider, date);  //  <<<<<<<<<<<<<<<<<<
+
+        this.appointments.push(appointment);
+
+        return appointment;
+      }
+
+      public All(): Appointment[] {
+        return this.appointments;
+      }
+
+      public findByDate(date: Date): Appointment | null {
+        const findAppointment = this.appointments.find((appointment) =>
+          isEqual(date, appointment.date),
+        );
+
+        return findAppointment || null;
+      }
+    }
+
+    export default AppointmentsRepository;
+
+
+02) Enviando parâmetros para criar um novo agendamento após a refatoração do método "create":
+
+    Agora iremos entender perfeitamente o porque fizemos essa refatoração no método "create",
+    pois ao invés de passarmos os parâmetros incertos que estávamos passando anteriromente,
+    iremos possuir ajuda do "intelisense", graças ao TS e ao padrão "DTO".
+
+    Ou seja, através do DTO estamos transferindo os dados de um arquivo/módulo/componente para
+    outro através do formato de Objeto,
+    portanto quando formos enviar os parâmetros para o método "create",
+    estaremos lidando com parâmetros nomeados e saberemos exatamente o que deve ser enviado.
+
+    Caso o método "create" cresça, ou seja,
+    caso sejam incorporados novos dados na entidade Appointment,
+    saberemos exatamente o que deverá ser enviad.
+
+    import { Router } from 'express';
+    import { startOfHour, parseISO } from 'date-fns';
+
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+
+    const appointmentsRouter = Router();
+
+    const appointmentsRepository = new AppointmentsRepository();
+
+    appointmentsRouter.get('/', (request, response) => {
+      const appointments = appointmentsRepository.All();
+
+      return response.json(appointments);
+    });
+
+    appointmentsRouter.post('/', (request, response) => {
+      const { provider, date } = request.body;
+
+      const parsedDate = startOfHour(parseISO(date));
+
+      const findAppointmentInSameDate = appointmentsRepository.findByDate(
+        parsedDate,
+      );
+
+      if (findAppointmentInSameDate) {
+        return response.status(400).json({
+          message:
+            'O horário escolhido não está disponível, por favor, tente outro.',
+        });
+      }
+
+      const appointment = appointmentsRepository.create({  //  <<<<<<<<<<<<<<<<
+        provider,  //  <<<<<<<<<<<<<<<<
+        date: parsedDate,  //  <<<<<<<<<<<<<<<<
+      });  //  <<<<<<<<<<<<<<<<
+
+      return response.json(appointment);
+    });
+
+    export default appointmentsRouter;
+
+
+03) Refatorando o "constructor" do model Appointment:
+
+    Dentro do método construtor da classe Appointment iremos utilizar a
+    desestruturação para pegarmos o { provider, date } que serão usados para
+    criar o objeto "Appointment".
+
+    O problema que enfrentaremos será o seguinte:
+    dentro do método construtor estamos gerando o id através de uma lib,
+    portanto o "id" será um parâmetro omitido no método construtor.
+
+    ...
+
+    Para resolvermos isso,
+    podemos usar uma "função"/"helper" do TS,
+    que é o "Omit".
+
+    O "Omit" recebe 2 parâmetros:
+    - o primeiro é o "tipo" no qual iremos omitir algo.
+    - o segundo é a variável que será omitida:
+
+    import { uuid } from 'uuidv4';
+
+    class Appointment {
+      id: string;
+
+      provider: string;
+
+      date: Date;
+
+      constructor({ provider, date }: Omit<Appointment, 'id'>) {  //  <<<<<<<<<<<<<<<<
+        this.id = uuid();
+        this.provider = provider;
+        this.date = date;
+      }
+    }
+
+    export default Appointment;
+
+
+04) Refatorando o envio de parâmetros dentro do método "create" no AppointmentsRepository:
+
+    Porque?
+    Porque refatoramos o "constructor" do model "Appointment" para
+    recebermos um objeto, seguindo o padrão DTO,
+    portanto teremos que enviar um objeto dentro do método "create":
+
+    import { isEqual } from 'date-fns';
+
+    import Appointment from '../models/Appointment';
+
+    // DTO: Data Transfer Object
+    interface CreateAppointmentDTO {
+      provider: string;
+      date: Date;
+    }
+
+    class AppointmentsRepository {
+      private appointments: Appointment[];
+
+      constructor() {
+        this.appointments = [];
+      }
+
+      public create({ provider, date }: CreateAppointmentDTO): Appointment {
+        const appointment = new Appointment({ provider, date });  //  <<<<<<<<<<<<
+
+        this.appointments.push(appointment);
+
+        return appointment;
+      }
+
+      public All(): Appointment[] {
+        return this.appointments;
+      }
+
+      public findByDate(date: Date): Appointment | null {
+        const findAppointment = this.appointments.find((appointment) =>
+          isEqual(date, appointment.date),
+        );
+
+        return findAppointment || null;
+      }
+    }
+
+    export default AppointmentsRepository;
