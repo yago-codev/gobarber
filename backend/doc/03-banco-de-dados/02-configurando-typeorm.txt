@@ -1,0 +1,106 @@
+01) Site do TypeORM:
+
+    https://typeorm.io/#/
+
+
+
+02) Instalando o TypeORM:
+
+    yarn add typeorm
+
+
+
+03) Instalando o pg (driver do postgres):
+
+    yarn add pg
+
+
+
+04) Criando arquivo de configuracão do TypeORM:
+
+    raíz do projeto:
+    ormconfig.json
+
+
+05) Passando as credenciais de acesso ao banco de dados:
+
+    {
+      "type": "postgres",
+      "host": "localhost",
+      "port": 5432,
+      "username": "docker",
+      "password": "docker",
+      "database": "gostack_gobarber"
+    }
+
+
+06) Criando a pasta "database" dentro de "src"
+
+
+07) Criando o arquivo "index.ts" dentro da pasta "database"
+
+
+08) Estrutura do arquivo "index.ts" da pasta "database":
+
+    08.1) Inicialmente importaremos a função {createConnection} do "typeorm":
+
+    import { createConnection } from 'typeorm';  //  <<<<<<<
+
+
+    08.2) Agora iremos simpelsmente declarar a função "createConnection()"
+    dentro do arquivo.
+
+    A partir do momento em que ela for declarada, passará a buscar
+    pelo arquivo contendo as credencias de acesso ao banco de dados,
+    que nesse caso é o arquivo "ormconfig.json".
+
+    Se o arquivo for encontrado,
+    a função irá ler as credencias de acesso e irá conectar ao banco.
+
+    import { createConnection } from 'typeorm';
+
+    createConnection();  //  <<<<<<<<<
+
+09) Importando o arquivo de entrada da pasta "database" para
+    realizarmos a conexão dentro do arquivo principal da aplicação "server.ts":
+
+    OBS: esse import não precisa ser nomeado,
+    porque esse arquivo do database só irá realizar a conexão com o banco,
+    não precisando retornar nada.
+
+    import express from 'express';
+
+    import routes from './routes';
+    import './database';  //  <<<<<<<<
+
+    const app = express();
+
+    app.use(express.json()); // configurando o express para entender o formato JSON enviado pelas requisições
+    app.use(routes);
+
+    app.listen(3333, () => {
+      console.log('Servidor rodando na porta 3333');
+    });
+
+
+10) Agora precisaremos criar a base de dados que
+    foi declarada dentro do arquivo de configuração do 'typeorm'.
+
+    Faremos a criação dessa database através da ferramenta "DBeaver".
+
+    OBS: Para conseguirmos conectar ao postgres através do DBeaver,
+    precisaremos estar com o container do docker startado.
+
+    ...
+
+    Database name: gobarber
+    Owner: postgres
+    Encoding: UTF-8
+    Tablespace: pg_default
+
+
+    ...
+
+
+    Pronto,
+    com isso nossa configuração e conexão já estarão plenamente funcionais!
