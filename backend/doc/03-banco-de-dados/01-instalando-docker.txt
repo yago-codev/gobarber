@@ -1,0 +1,8 @@
+01) Link com explicações:
+
+    https://www.notion.so/Instalando-Docker-6290d9994b0b4555a153576a1d97bee2#cca124d4118944bc95437577fbeb8450
+
+
+02) Comando para iniciar um container com uma imagem do Postgres:
+
+    docker run --name gostack_postgres -e POSTGRES_PASSWORD=docker -p 5432:5432 -d postgres
