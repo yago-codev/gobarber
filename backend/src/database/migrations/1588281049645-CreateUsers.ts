@@ -1,31 +1,35 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-export default class CreateAppointments1588202916262
-  implements MigrationInterface {
+export default class CreateUsers1588281049645 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
-        name: 'appointments',
+        name: 'users',
         columns: [
           {
             name: 'id',
             type: 'varchar',
-            isPrimary: true, // chave primária da tabela
-            generationStrategy: 'uuid', // o id será gerado como um "universally unique identifier"(uuid)
+            isPrimary: true,
+            generationStrategy: 'uuid',
             default: 'uuid_generate_v4()',
           },
           {
-            name: 'provider',
+            name: 'name',
             type: 'varchar',
           },
           {
-            name: 'date',
-            type: 'timestamp with time zone', // tipo exclusivo do Postgres: salva o horário e o fuso-horário
+            name: 'email',
+            type: 'varchar',
+            isUnique: true,
           },
           {
-            name: 'created_at',
+            name: 'password',
+            type: 'varchar',
+          },
+          {
+            name: 'crated_at',
             type: 'timestamp',
-            default: 'now()',
+            default: 'now()', // função para capturar o horário em que o registro foi criado
           },
           {
             name: 'updated_at',
@@ -38,6 +42,6 @@ export default class CreateAppointments1588202916262
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropTable('appointments');
+    await queryRunner.dropTable('users');
   }
 }

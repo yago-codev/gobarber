@@ -1,0 +1,132 @@
+01) Criando/Gerando a "migration" de usuário através do typeorm-cli:
+
+    yarn typeorm migration:create -n CreateUsers
+
+
+02) A primeira coisa a ser alterada na "migration" gerada é o tipo de export:
+
+    Porque?
+    Porque as migrations são geradas com um export normal,
+    então temos que mudar esse export normal para um "export default ..."
+
+    import {MigrationInterface, QueryRunner} from "typeorm";
+
+    export default class CreateUsers1588281049645 implements MigrationInterface {  //  <<<<<<<<
+
+        public async up(queryRunner: QueryRunner): Promise<any> {
+        }
+
+        public async down(queryRunner: QueryRunner): Promise<any> {
+        }
+
+    }
+
+
+03) Agora iremos mudar o tipo de retorno dos métodod "up" e "down" para "Promise<void>",
+    porque eles retornam uma Promise que não irá retornar nada,
+    afinal de contas, esses métodos do typeorm só irão interagir com o banco de dados.
+
+    import { MigrationInterface, QueryRunner } from 'typeorm';
+
+    export default class CreateUsers1588281049645 implements MigrationInterface {
+      public async up(queryRunner: QueryRunner): Promise<void> {}  //  <<<<<<<<<<<<<<<<
+
+      public async down(queryRunner: QueryRunner): Promise<void> {}  //  <<<<<<<<<<<<<<
+    }
+
+
+04) estrutura do método "up" e do método "down"
+
+    import { MigrationInterface, QueryRunner, Table } from 'typeorm';
+
+    export default class CreateUsers1588281049645 implements MigrationInterface {
+      public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.createTable(
+          new Table({
+            name: 'users',
+            columns: [
+              {
+                name: 'id',
+                type: 'varchar',
+                isPrimary: true,
+                generationStrategy: 'uuid',
+                default: 'uuid_generate_v4()',
+              },
+              {
+                name: 'name',
+                type: 'varchar',
+              },
+              {
+                name: 'email',
+                type: 'varchar',
+                isUnique: true,
+              },
+              {
+                name: 'password',
+                type: 'varchar',
+              },
+              {
+                name: 'crated_at',
+                type: 'timestamp',
+                default: 'now()', // função para capturar o horário em que o registro foi criado
+              },
+              {
+                name: 'updated_at',
+                type: 'timestamp',
+                default: 'now()',
+              },
+            ],
+          }),
+        );
+      }
+
+      public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.dropTable('users');
+      }
+    }
+
+
+
+05) Executando a "migration" através do "typeorm-cli":
+
+    yarn typeorm migration:run
+
+
+
+06) Pronto, a "migration" já refletiu no banco de dados e já possuímos a tabela de usuários.
+    Podemos utilizar o DBeaver pra visualizar isso!
+
+
+07) Criando o model de usuários:
+
+    import {
+      Entity,
+      Column,
+      PrimaryGeneratedColumn,
+      CreateDateColumn,
+      UpdateDateColumn,
+    } from 'typeorm';
+
+    @Entity('users')
+    class User {
+      @PrimaryGeneratedColumn('uuid')
+      id: string;
+
+      @Column()
+      name: string;
+
+      @Column()
+      email: string;
+
+      @Column()
+      password: string;
+
+      @CreateDateColumn()
+      created_at: Date;
+
+      @UpdateDateColumn()
+      updated_at: Date;
+    }
+
+    export default User;
+
