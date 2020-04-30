@@ -1,0 +1,197 @@
+01) O que faremos a seguir é realizar algumas modificações dentro do Model de Appointment.
+
+    Por enquanto o Model que havíamos declarado é apenas uma
+    classe tradicional do JS, que armazena o "id", o "provider" e o "date"
+
+
+02) Refatorando o Model para criar uma Entidade do "typeorm":
+
+    import { uuid } from 'uuidv4';
+    import { Entity } from 'typeorm';  //  <<<<<<<
+
+    class Appointment {
+      id: string;
+
+      provider: string;
+
+      date: Date;
+
+      constructor({ provider, date }: Omit<Appointment, 'id'>) {
+        this.id = uuid();
+        this.provider = provider;
+        this.date = date;
+      }
+    }
+
+    export default Appointment;
+
+
+03) Antes de prosseguirmos com a refatoração do Model,
+    precisaremos habilitar duas configurações no arquivo de configuração do TS:
+
+    OBS: assas funcionalidades que iremos habilitar fazem com que possamos
+    utilizar os "decorators" do TS
+
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata: true,
+
+
+04) Continuando refatoração do Model:
+
+    A seguir iremos utilizar a funcionalidade de "decorators" do TS.
+    Os decorators funcionam como se fossem uma função.
+    Nesse caso utilizaremos o "decorator" para aplicar o "Entity" que importamos do "typeorm".
+    Como parâmetro desse "decorator" Entity, iremos passar o nome da tabela "appointments"
+
+    Quando aplicamos um "decorator" acima de uma Classe,
+    isso significa que a classe é um parâmetro que estamos passando pra nossa "@Entity"
+
+    import { uuid } from 'uuidv4';
+    import { Entity } from 'typeorm';
+
+    @Entity('appointments')  //  <<<<<<<<<<
+    class Appointment {
+      id: string;
+
+      provider: string;
+
+      date: Date;
+
+      constructor({ provider, date }: Omit<Appointment, 'id'>) {
+        this.id = uuid();
+        this.provider = provider;
+        this.date = date;
+      }
+    }
+
+    export default Appointment;
+
+
+05) A partir desse momento, quando utilizamos o decorator "@Entity('appointments')" acima da Classe,
+    estamos indicando que o Model de Appointment, toda vez que ele for salvo,
+    ele será armazenado dentro da tabela de 'appointments'.
+
+    Agora o próximo passo será dizer o que cada coluna representa,
+    pois dentro da nossa classe podemos ter "atributos/propriedades" que
+    não necessariamente sejam colunas dentro do banco de dados.
+
+    Portanto precisamos fazer as devidas alterações dentro da Classe,
+    começando pela importação do { Column, PrimaryGeneratedColumn } do "typeorm"
+
+    import { uuid } from 'uuidv4';
+    import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';  /// <<<<<<<
+
+    @Entity('appointments')
+    class Appointment {
+      id: string;
+
+      provider: string;
+
+      date: Date;
+
+      constructor({ provider, date }: Omit<Appointment, 'id'>) {
+        this.id = uuid();
+        this.provider = provider;
+        this.date = date;
+      }
+    }
+
+    export default Appointment;
+
+    ...
+
+    05.1) OBS: O "PrimaryGeneratedColumn" será utilizando no "id",
+    afinal de contas, ele é uma "primary key", e ele é um valor gerado de forma automática,
+    por isso "PrimaryGeneratedColumn"
+
+    OBS2: seguiremos utilizando os "decorators" para aplicar
+    as funções do "typeorm" que importamos para especificarmos as colunas da tabela.
+    Como parâmetro do "PrimaryGeneratedColumn()" passaremos qual será o tipo de geração
+    que utilizaremos para o "id".
+    Aqui poderemos utilizar 3 opções:
+    -> increment
+    -> rowid
+    -> uuid
+
+    import { uuid } from 'uuidv4';
+    import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+
+    @Entity('appointments')
+    class Appointment {
+      @PrimaryGeneratedColumn('uuid')  //  <<<<<<<<<<<<<
+      id: string;
+
+      provider: string;
+
+      date: Date;
+
+      constructor({ provider, date }: Omit<Appointment, 'id'>) {
+        this.id = uuid();
+        this.provider = provider;
+        this.date = date;
+      }
+    }
+
+    export default Appointment;
+
+
+    05.2) A seguir continuaremos com as especificações do restante das colunas,
+    aplicando "decorators":
+
+    import { uuid } from 'uuidv4';
+    import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+
+    @Entity('appointments')
+    class Appointment {
+      @PrimaryGeneratedColumn('uuid')
+      id: string;
+
+      @Column()  //  <<<<<<<
+      provider: string;  //  <<<<<<<
+
+      @Column('timestamp with time zone')  //  <<<<<<<
+      date: Date;  //  <<<<<<<
+
+      constructor({ provider, date }: Omit<Appointment, 'id'>) {
+        this.id = uuid();
+        this.provider = provider;
+        this.date = date;
+      }
+    }
+
+    export default Appointment;
+
+
+    05.3) Agora iremos remover o "constructor" da Classe,
+    porque por padrão, quando criamos uma "Entity",
+    o construtor é criado de forma automática:
+
+    import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+
+    @Entity('appointments')
+    class Appointment {
+      @PrimaryGeneratedColumn('uuid')
+      id: string;
+
+      @Column()
+      provider: string;
+
+      @Column('timestamp with time zone')
+      date: Date;
+    }
+
+    export default Appointment;
+
+
+    05.4) Agora precisaremos habilitar uma configuração no "TS",
+    porque dentro da Classe do Model nós não estaremos utilizando o método construtor para
+    inicializar os atributos da Classe:
+
+    Dentro do arquivo "tsconfig.json",
+    descomentaremos o seguinte atributo:
+
+    "strictPropertyInitialization": false  //  <<<<<
+
+
+06) Pronto, a estrutura do nosso Model já encontra-se plenamente funcional e
+    pronta para ser usada.
