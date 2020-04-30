@@ -1,0 +1,240 @@
+01) O que faremos a seguir é criar nossa primeira Tabela no banco de dados,
+    que será a Tabela de Agendamentos/Appointments.
+
+    Essa Tabela de Appointments irá armazenar os dados vindos no corpo da requisição
+    da rota de criação de um novo agendamento,
+    pois até o momento estávamos salvando isso dentro de um array.
+
+
+02) Criando a pasta de Migrations:
+
+    src/database/migrations
+
+
+03) Configurando a pasta onde serão armazenadas as Migrations do banco de dados
+    dentro do arquivo de configuração do TypeORM.
+
+    {
+      "type": "postgres",
+      "host": "localhost",
+      "port": 5432,
+      "username": "postgres",
+      "password": "docker",
+      "database": "gobarber",
+      "migrations": ["./src/database/migrations/*.ts"]  //  <<<<<<<<<
+    }
+
+
+04) Configurando a interface de linha de comando "CLI" dentro do arquivo de configuração do TypeORM:
+
+    {
+      "type": "postgres",
+      "host": "localhost",
+      "port": 5432,
+      "username": "postgres",
+      "password": "docker",
+      "database": "gobarber",
+      "migrations": ["./src/database/migrations/*.ts"],
+      "cli": {  //  <<<<<<<<
+        "migrationsDir": "./src/database/migrations"  //  <<<<<<<<
+      }  //  <<<<<<<<
+    }
+
+
+
+05) Criando "script" no "package.json" para executarmos o comando de geração de migrations
+    através do TS:
+
+    {
+      "name": "gobarber",
+      "version": "1.0.0",
+      "main": "index.js",
+      "repository": "https://github.com/yago-codev/gobarber.git",
+      "author": "Yago Milano <yago.codev@gmail.com> (https://github.com/yago-codev)",
+      "license": "MIT",
+      "scripts": {
+        "build": "tsc",
+        "dev:server": "ts-node-dev --inspect --transpileOnly --ignore-watch node_modules src/server.ts",
+        "typeorm": "ts-node-dev ./node_modules/typeorm/cli.js"  //  <<<<<<<<<<<<<
+      },
+      "devDependencies": {
+        "@types/express": "^4.17.6",
+        "@typescript-eslint/eslint-plugin": "^2.29.0",
+        "@typescript-eslint/parser": "^2.29.0",
+        "eslint": "^6.8.0",
+        "eslint-config-airbnb-base": "^14.1.0",
+        "eslint-config-prettier": "^6.11.0",
+        "eslint-import-resolver-typescript": "^2.0.0",
+        "eslint-plugin-import": "^2.20.1",
+        "eslint-plugin-prettier": "^3.1.3",
+        "prettier": "^2.0.5",
+        "ts-node-dev": "^1.0.0-pre.44",
+        "typescript": "^3.8.3"
+      },
+      "dependencies": {
+        "date-fns": "^2.12.0",
+        "express": "^4.17.1",
+        "pg": "^8.0.3",
+        "typeorm": "^0.2.24",
+        "uuidv4": "^6.0.7"
+      }
+    }
+
+
+06) Gerando "migration" através do CLI do "typeorm":
+
+    OBS: esse comando irá gerar um novo arquivo de "migration"
+    dentro da pasta "migrations"
+
+    yarn typeorm migration:create -n CreateAppointments
+
+
+07) Entendendo a estrutura do arquivo de "migration":
+
+    -> Dentro do método "up()" nós iremos inserir o que nós queremos que seja
+    feito no banco de dados quando essa migration for executada.
+
+    -> O método "down()" será usado como "fallback"(recuo/retroceder).
+    Ou seja, através do método "down()" iremos desfazer o que foi feito no método "up()".
+    Se tivermos criado um campo no método up, o método down ira remover esse campo.
+
+
+08) Criando a nova Tabela:
+
+    OBS: antes de qualquer coisa,
+    iremos trocar o tipo do retorno do método para "Promise<void>",
+    pois não iremos retornar nada nesse método!
+
+    OBS2: iremos alterar o tipo de exportação da Classe para "export default..."
+
+    OBS3: Dentro do arquivo de "migration",
+    precisaremos incluir na desestruturação o método "Table".
+
+    OBS4: Desabilitaremos no "ESLint" a regra "class-methods-use-this": "off".
+    Porque? Porque não iremos utilizar a palavra "this" dentro da classe da "migration".
+
+    ...
+
+    Criando tabela e definindo estrutura dos dados dentro do método "up()":
+
+
+    import { MigrationInterface, QueryRunner, Table } from 'typeorm';
+
+    export default class CreateAppointments1588202916262
+      implements MigrationInterface {
+      public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.createTable(
+          new Table({
+            name: 'appointments',
+            columns: [
+              {
+                name: 'id',
+                type: 'varchar',
+                isPrimary: true, // chave primária da tabela
+                generationStrategy: 'uuid', // o id será gerado como um "universally unique identifier"(uuid)
+              },
+              {
+                name: 'provider',
+                type: 'varchar',
+                isNullable: false, // o valor não pode ficar em branco/nulo
+              },
+              {
+                name: 'date',
+                type: 'timestamp with time zone', // tipo exclusivo do Postgres: salva o horário e o fuso-horário
+                isNullable: false,
+              },
+            ],
+          }),
+        );
+      }
+
+      public async down(queryRunner: QueryRunner): Promise<void> {}
+    }
+
+
+09) Estruturando o método "down()" para fazermos o "fallback" da "migration":
+
+    OBS: a única coisa que faremos é utilizar o método "dropTable" para
+    executarmos o "drop" da tabela "appointments":
+
+    import { MigrationInterface, QueryRunner, Table } from 'typeorm';
+
+    export default class CreateAppointments1588202916262
+      implements MigrationInterface {
+      public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.createTable(
+          new Table({
+            name: 'appointments',
+            columns: [
+              {
+                name: 'id',
+                type: 'varchar',
+                isPrimary: true, // chave primária da tabela
+                generationStrategy: 'uuid', // o id será gerado como um "universally unique identifier"(uuid)
+              },
+              {
+                name: 'provider',
+                type: 'varchar',
+                isNullable: false, // o valor não pode ficar em branco/nulo
+              },
+              {
+                name: 'date',
+                type: 'timestamp with time zone', // tipo exclusivo do Postgres: salva o horário e o fuso-horário
+                isNullable: false,
+              },
+            ],
+          }),
+        );
+      }
+
+      public async down(queryRunner: QueryRunner): Promise<void> {  //  <<<<<<<<<<<<<<
+        await queryRunner.dropTable('appointments');  //  <<<<<<<<<<<<<<
+      }  //  <<<<<<<<<<<<<<
+    }
+
+
+10) Executando a "migration" para que ela seja refletida no banco de dados, via CLI:
+
+    yarn typeorm migration:run
+
+
+11) Utilizando o DBeaver para conectar ao banco de dados para
+    visualizarmos o que foi gerado através da "migration":
+
+    OBS: perceberemos que foram geradas duas tabelas distintas:
+
+    -> na tabela "migrations" nós teremos um registro de todas as "migrations" já executadas.
+
+    -> Na tabela de appointments nós teremos o reflexo exato das colunas que
+    foram definidas dentro do arquivo de "migration", mais especificamente no método "up()".
+
+
+
+12) Alterando "migrations":
+
+    Quando formos corrigir/alterar a estrutura de uma migration,
+    isso só poderá ser feito se ela ainda NAO tiver sido enviada pro
+    sistema de controle de versão: seja ele o Git, o ambiente de produção...
+
+    Ou seja, só poderemos alterar a migration enquanto ela estiver em nossa máquina.
+    Caso contrário precisaremos refarer a migration do zero.
+
+    ...
+
+    -> Alterando "migration" no nosso caso,
+    onde ainda não enviamos ela pra ninguém:
+
+    OBS: esse comando irá fazer o drop da tabela (apagando).
+
+    yarn typeorm migration:revert
+
+
+13) Gerando a migration novamente:
+
+    yarn typeorm migration:run
+
+
+
+14) Vendo os comandos SQL que foram usados pra gerar a migration:
+
+    yarn typeorm migration:show
