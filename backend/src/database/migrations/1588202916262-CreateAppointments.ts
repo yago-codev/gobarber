@@ -12,6 +12,7 @@ export default class CreateAppointments1588202916262
             type: 'varchar',
             isPrimary: true, // chave primária da tabela
             generationStrategy: 'uuid', // o id será gerado como um "universally unique identifier"(uuid)
+            default: 'uuid_generate_v4()',
           },
           {
             name: 'provider',

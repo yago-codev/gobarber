@@ -25,6 +25,23 @@
     }
 
 
+03.1) Configurando a pasta onde irão ficar as "entidades"/models do banco de dados:
+
+      {
+        "type": "postgres",
+        "host": "localhost",
+        "port": 5432,
+        "username": "postgres",
+        "password": "docker",
+        "database": "gobarber",
+        "entities": ["./src/models/*.ts"],  //  <<<<<<<<<<<<<<<
+        "migrations": ["./src/database/migrations/*.ts"],
+        "cli": {
+          "migrationsDir": "./src/database/migrations"
+        }
+      }
+
+
 04) Configurando a interface de linha de comando "CLI" dentro do arquivo de configuração do TypeORM:
 
     {
@@ -117,6 +134,11 @@
 
     Criando tabela e definindo estrutura dos dados dentro do método "up()":
 
+
+    OBS: para gerarmos o id por default através do uuid,
+    precisaremos utilizar o 'uuid_generate_v4',
+    que é um recurso do Postgres,
+    assim como também o tipo 'timestamp with time zone'
 
     import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 

@@ -1,0 +1,558 @@
+01) O que faremos a partir de agora é começar a salvar, listar,
+    ou seja, vamos realizar todas as operações do banco de dados,
+    utilizando o conceito de repositórios.
+
+    Porém, agora como estamos utilizando o "TypeORM",
+    ele por padrão já possui se próprio repositório,
+    onde realizamos as operações padrões do banco de dados:
+    tal como listagem, deletar, criar, atualizar...
+
+
+02) Dentro do arquivo "AppointmentsRepository" começaremos removendo
+    as referencias do array onde estávamos armazenando os dados de agendamento,
+    assim como também os métodos "create()" e "All()" e a interface,
+    porque como já foi mencionado, o TypeORM possui seus próprios métodos de queries:
+
+
+    Como o arquivo deve ficar:
+
+    import { isEqual } from 'date-fns';
+
+    import Appointment from '../models/Appointment';
+
+    // DTO: Data Transfer Object
+    class AppointmentsRepository {
+      public findByDate(date: Date): Appointment | null {
+        const findAppointment = this.appointments.find((appointment) =>
+          isEqual(date, appointment.date),
+        );
+
+        return findAppointment || null;
+      }
+    }
+
+    export default AppointmentsRepository;
+
+
+
+    02.1) Importando os métodos { EntityRepository, Repository } do "typeorm":
+
+          import { isEqual } from 'date-fns';
+          import { EntityRepository, Repository } from 'typeorm';  //  <<<<<<<
+
+          import Appointment from '../models/Appointment';
+
+          // DTO: Data Transfer Object
+          class AppointmentsRepository {
+            public findByDate(date: Date): Appointment | null {
+              const findAppointment = this.appointments.find((appointment) =>
+                isEqual(date, appointment.date),
+              );
+
+              return findAppointment || null;
+            }
+          }
+
+          export default AppointmentsRepository;
+
+
+    02.2) A seguir utilizaremos o EntityRepository como um decorator,
+          logo acima da classe AppointmentsRepository,
+          passando o nome do model como parâmetro:
+
+          import { isEqual } from 'date-fns';
+          import { EntityRepository, Repository } from 'typeorm';
+
+          import Appointment from '../models/Appointment';
+
+          @EntityRepository(Appointment)  //  <<<<<<<<
+          class AppointmentsRepository {
+            public findByDate(date: Date): Appointment | null {
+              const findAppointment = this.appointments.find((appointment) =>
+                isEqual(date, appointment.date),
+              );
+
+              return findAppointment || null;
+            }
+          }
+
+          export default AppointmentsRepository;
+
+
+    02.3) Agora iremos usar o "extends" para utilizarmos a classe "Repository" do proprio "typeorm",
+          e será a partir dessa classe que teremos acesso aos métodos para trabalharmos com as queries no banco de dados.
+
+          OBS: a classe "Repository" da qual iremos herdar os métodos espera
+          receber por parâmetro qual será o Model com o qual iremos trabalhar.
+          Ou seja, o parâmetro da tipagem.
+
+
+          import { isEqual } from 'date-fns';
+          import { EntityRepository, Repository } from 'typeorm';
+
+          import Appointment from '../models/Appointment';
+
+          @EntityRepository(Appointment)
+          class AppointmentsRepository extends Repository<Appointment> {  //  <<<<<<<<<
+            public findByDate(date: Date): Appointment | null {
+              const findAppointment = this.appointments.find((appointment) =>
+                isEqual(date, appointment.date),
+              );
+
+              return findAppointment || null;
+            }
+          }
+
+          export default AppointmentsRepository;
+
+
+
+03) Refatorando o método "findByDate":
+
+    A primeira coisa que faremos é criar uma constante
+    onde iremos realizar a "query" no banco de dados,
+    utilizando o método "findOne" do typeorm:
+
+    import { isEqual } from 'date-fns';
+    import { EntityRepository, Repository } from 'typeorm';
+
+    import Appointment from '../models/Appointment';
+
+    @EntityRepository(Appointment)
+    class AppointmentsRepository extends Repository<Appointment> {
+      public findByDate(date: Date): Appointment | null {
+        // const findAppointment = this.appointments.find((appointment) =>
+        //   isEqual(date, appointment.date),
+        // );
+
+        const findAppointment = this.findOne({  //  <<<<<<<<<
+          where: { date },  //  <<<<<<<<<
+        });  //  <<<<<<<<<
+
+        return findAppointment || null;
+      }
+    }
+
+    export default AppointmentsRepository;
+
+
+04) O "findByOne" é assíncrono, porque irá realizar uma operação no banco de dados,
+    portanto precisaremos transformar o método em assíncrono,
+    e a constante "findAppointment" precisará utilizar o "await" na operação:
+
+    import { isEqual } from 'date-fns';
+    import { EntityRepository, Repository } from 'typeorm';
+
+    import Appointment from '../models/Appointment';
+
+    @EntityRepository(Appointment)
+    class AppointmentsRepository extends Repository<Appointment> {
+      public async findByDate(date: Date): Appointment | null {  //  <<<<<<<<<
+        // const findAppointment = this.appointments.find((appointment) =>
+        //   isEqual(date, appointment.date),
+        // );
+
+        const findAppointment = await this.findOne({  //  <<<<<<
+          where: { date },
+        });
+
+        return findAppointment || null;
+      }
+    }
+
+    export default AppointmentsRepository;
+
+
+05) Agora precisaremos refatorar o retorno do método "findByDate",
+    porque a partir do momento em que usamos o async,
+    sempre iremos retornar uma Promise.
+    E dentro dessa Promise,
+    precisaremos especifcar qual é o retorno dela,
+    ou seja, o que a Promise do método "findByDate" irá retornar,
+    quais dados(formato), que será um Appointment ("Model"):
+
+    import { EntityRepository, Repository } from 'typeorm';
+
+    import Appointment from '../models/Appointment';
+
+    @EntityRepository(Appointment)
+    class AppointmentsRepository extends Repository<Appointment> {
+      public async findByDate(date: Date): Promise<Appointment | null> {  //  <<<<<<<<<<
+        // const findAppointment = this.appointments.find((appointment) =>
+        //   isEqual(date, appointment.date),
+        // );
+
+        const findAppointment = await this.findOne({
+          where: { date },
+        });
+
+        return findAppointment || null;
+      }
+    }
+
+    export default AppointmentsRepository;
+
+
+
+06) Refatorando o "CreateAppointmentService" para utilizarmos o "AppointmentsRepository":
+
+    A seguir faremos duas coisas:
+    -> importaremos o {getCustomRepository} do "typeorm" e
+    -> removeremos o método construtor
+
+    import { startOfHour } from 'date-fns';
+    import { getCustomRepository } from "typeorm";  //  <<<<<<<
+
+    import Appointment from '../models/Appointment';
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+
+    interface Request {
+      provider: string;
+      date: Date;
+    }
+
+    class CreateAppointmentService {
+      public execute({ provider, date }: Request): Appointment {
+        const appointmentDate = startOfHour(date);
+
+        const findAppointmentInSameDate = this.appointmentsRepository.findByDate(
+          appointmentDate,
+        );
+
+        if (findAppointmentInSameDate) {
+          throw Error(
+            'O horário escolhido não está disponível, por favor, tente outro.',
+          );
+        }
+
+        const appointment = this.appointmentsRepository.create({
+          provider,
+          date: appointmentDate,
+        });
+
+        return appointment;
+      }
+    }
+
+    export default CreateAppointmentService;
+
+
+07) Criaremos uma constante dentro do método "execute",
+    e dentro dessa constante chamaremos a função "getCustomRepository",
+    passando o "AppointmentsRepository" como parâmetro:
+
+    É a partir dessa função "getCustomRepository" que
+    iremos conseguir "conectar" o repositório,
+    tendo acesso a todos os métodos de queries:
+
+
+    import { startOfHour } from 'date-fns';
+    import { getCustomRepository } from "typeorm";
+
+    import Appointment from '../models/Appointment';
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+
+    interface Request {
+      provider: string;
+      date: Date;
+    }
+
+    class CreateAppointmentService {
+      public execute({ provider, date }: Request): Appointment {
+        const appointmentsRepository = getCustomRepository(AppointmentsRepository);  //  <<<<<<<
+
+        const appointmentDate = startOfHour(date);
+
+        const findAppointmentInSameDate = this.appointmentsRepository.findByDate(
+          appointmentDate,
+        );
+
+        if (findAppointmentInSameDate) {
+          throw Error(
+            'O horário escolhido não está disponível, por favor, tente outro.',
+          );
+        }
+
+        const appointment = appointmentsRepository.create({
+          provider,
+          date: appointmentDate,
+        });
+
+        return appointment;
+      }
+    }
+
+    export default CreateAppointmentService;
+
+
+08) O próximo passo será persistir/salvar o "appointment" no banco de dados.
+
+    OBS: através da operação "appointmentsRepository.create({}),
+    estaremos apenas gerando a "entidade/objeto",
+    portanto teremos que pegar esse objeto e persistir-lo no banco,
+    o que nos fará ter que transformar o método "execute" em assíncrono,
+    além de ter que alterar a tipagem do retorno do método,
+    passando a Promise como parâmetro, e o "Appointment" como formato/parametro/tipagem dessa Promise:
+
+
+    OBS2: na operação da constante "findAppointmentInSameDate" nós iremos
+    realizar uma operação assíncrona,
+    portanto precisaremos do "await"
+
+    import { startOfHour } from 'date-fns';
+    import { getCustomRepository } from 'typeorm';
+
+    import Appointment from '../models/Appointment';
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+
+    interface Request {
+      provider: string;
+      date: Date;
+    }
+
+    class CreateAppointmentService {
+      public async execute({ provider, date }: Request): Promise<Appointment> {  //  <<<<<<<<
+        const appointmentsRepository = getCustomRepository(AppointmentsRepository);
+
+        const appointmentDate = startOfHour(date);
+
+        const findAppointmentInSameDate = await appointmentsRepository.findByDate(   //  <<<<<<<<
+          appointmentDate,
+        );
+
+        if (findAppointmentInSameDate) {
+          throw Error(
+            'O horário escolhido não está disponível, por favor, tente outro.',
+          );
+        }
+
+        const appointment = appointmentsRepository.create({
+          provider,
+          date: appointmentDate,
+        });
+
+        await appointmentsRepository.save(appointment);  //  <<<<<<<
+
+        return appointment;
+      }
+    }
+
+    export default CreateAppointmentService;
+
+
+09) Refatorando o arquivo de rotas "appointments.routes.ts":
+
+    A primeira coisa que faremos é remover a constante "appointmentsRepository"
+    que está instanciando o "AppointmentsRepository()"
+
+
+10) Iremos importar a função { getCustomRepository } do "typeorm":
+
+    Após termos realizado a importação,
+    iremos novamente criar a constante appointmentsRepository,
+    atribuindo o método getCustomRepository(),
+    passando o a importação do arquivo de repositório como parâmetro.
+
+    import { Router } from 'express';
+    import { parseISO } from 'date-fns';
+    import { getCustomRepository } from 'typeorm';  //  <<<<<<<<<<<<<
+
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+    import CreateAppointmentService from '../services/CreateAppointmentService';
+
+    const appointmentsRouter = Router();
+
+    appointmentsRouter.get('/', (request, response) => {
+      const appointmentsRepository = getCustomRepository(AppointmentsRepository);  //  <<<<<<<<<<<<
+      const appointments = appointmentsRepository.All();
+
+      return response.json(appointments);
+    });
+
+    appointmentsRouter.post('/', (request, response) => {
+      try {
+        const { provider, date } = request.body;
+
+        const parsedDate = parseISO(date);
+
+        const createAppointment = new CreateAppointmentService(
+          appointmentsRepository,
+        );
+
+        const appointment = createAppointment.execute({
+          provider,
+          date: parsedDate,
+        });
+
+        return response.json(appointment);
+      } catch (err) {
+        return response.status(400).json({ error: err.message });
+      }
+    });
+
+    export default appointmentsRouter;
+
+
+11) O próximo passo será modificar a constante "appointments",
+    fazendo com que o "appointmentsRepository" chame o método "find".
+
+    O método "find" é um método do "typeorm" para trabalharmos com queries no banco de dados.
+    Como não estamos passando nenhum parâmetro,
+    ele irá retornar todos os registros, tal como pretendemos fazer nessa rota "get":
+
+    import { Router } from 'express';
+    import { parseISO } from 'date-fns';
+    import { getCustomRepository } from 'typeorm';
+
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+    import CreateAppointmentService from '../services/CreateAppointmentService';
+
+    const appointmentsRouter = Router();
+
+    appointmentsRouter.get('/', (request, response) => {
+      const appointmentsRepository = getCustomRepository(AppointmentsRepository);
+      const appointments = appointmentsRepository.find();  //  <<<<<<<<<<<<<<<<<<<<
+
+      return response.json(appointments);
+    });
+
+    appointmentsRouter.post('/', (request, response) => {
+      try {
+        const { provider, date } = request.body;
+
+        const parsedDate = parseISO(date);
+
+        const createAppointment = new CreateAppointmentService(
+          appointmentsRepository,
+        );
+
+        const appointment = createAppointment.execute({
+          provider,
+          date: parsedDate,
+        });
+
+        return response.json(appointment);
+      } catch (err) {
+        return response.status(400).json({ error: err.message });
+      }
+    });
+
+    export default appointmentsRouter;
+
+
+12) Dentro da rota "post" iremos precisar novamente da constante "appointmentsRepository":
+
+    import { Router } from 'express';
+    import { parseISO } from 'date-fns';
+    import { getCustomRepository } from 'typeorm';
+
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+    import CreateAppointmentService from '../services/CreateAppointmentService';
+
+    const appointmentsRouter = Router();
+
+    appointmentsRouter.get('/', (request, response) => {
+      const appointmentsRepository = getCustomRepository(AppointmentsRepository);
+      const appointments = appointmentsRepository.find();
+
+      return response.json(appointments);
+    });
+
+    appointmentsRouter.post('/', (request, response) => {
+      try {
+        const { provider, date } = request.body;
+
+        const parsedDate = parseISO(date);
+
+        const appointmentsRepository = getCustomRepository(AppointmentsRepository);  //  <<<<<<<<<<<<<<<<<<
+
+        const createAppointment = new CreateAppointmentService(
+          appointmentsRepository,
+        );
+
+        const appointment = createAppointment.execute({
+          provider,
+          date: parsedDate,
+        });
+
+        return response.json(appointment);
+      } catch (err) {
+        return response.status(400).json({ error: err.message });
+      }
+    });
+
+    export default appointmentsRouter;
+
+
+
+14) Agora precisaremos transformar o middleware da rota "post" em assíncrono,
+    porque iremos trabalhar com assíncronismo quando estivermos executando o "createAppointment.execute":
+
+    import { Router } from 'express';
+    import { parseISO } from 'date-fns';
+    import { getCustomRepository } from 'typeorm';
+
+    import AppointmentsRepository from '../repositories/AppointmentsRepository';
+    import CreateAppointmentService from '../services/CreateAppointmentService';
+
+    const appointmentsRouter = Router();
+
+    appointmentsRouter.get('/', (request, response) => {
+      const appointmentsRepository = getCustomRepository(AppointmentsRepository);
+      const appointments = appointmentsRepository.find();
+
+      return response.json(appointments);
+    });
+
+    appointmentsRouter.post('/', async (request, response) => {  // <<<<<<<<<<<<<<
+      try {
+    const { provider, date } = request.body;
+
+    const parsedDate = parseISO(date);
+
+    const createAppointment = new CreateAppointmentService();
+
+    const appointment = await createAppointment.execute({  //  <<<<<<<<<<<<<<<<<<
+      provider,
+      date: parsedDate,
+    });
+
+    return response.json(appointment);
+  } catch (err) {
+    return response.status(400).json({ error: err.message });
+  }
+});
+
+export default appointmentsRouter;
+
+
+15) Quando utilizamos o TypeORM com a sintaxe de "decorators",
+    precisaremos instalar a seguinte dependencia:
+
+    yarn add reflect-metadata
+
+
+16) O "reflect-metadata" deve ser importado no arquivo de entrada da aplicação, que é o "server.ts":
+
+    OBS: ele deve ser importado ANTES de tudo.
+
+    import 'reflect-metadata';  //  <<<<<<
+
+    import express from 'express';
+
+    import routes from './routes';
+    import './database';
+
+    const app = express();
+
+    app.use(express.json()); // configurando o express para entender o formato JSON enviado pelas requisições
+    app.use(routes);
+
+    app.listen(3333, () => {
+      console.log('Servidor rodando na porta 3333');
+    });
+
+
+17) A partir de agora já possuímos todo o refatoramento concluído,
+    e já podemos testar as rotas para listar e fazer a inclusão de um novo registro no
+    banco de dados através do Insomnia.
